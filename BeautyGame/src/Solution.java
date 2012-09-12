@@ -41,23 +41,6 @@ public class Solution {
 		}
 	}
 
-	private boolean playerWinningOld(int n, boolean playerToMove) {
-		int beautyOfN = beautyOf(n);
-		int kMax = highestKFor(n);
-		
-		for (int k=kMax; k >= 0; k--) {
-			int twoToTheK = 1 << k;
-			int nMinusTwoToTheK = n - twoToTheK;
-			
-			if (	(beautyOfN == beautyOf(nMinusTwoToTheK))
-				&& (playerWinning(nMinusTwoToTheK, !playerToMove) == playerToMove)) {
-				return playerToMove;
-			}
-		}
-		
-		return !playerToMove;
-	}
-	
 	private boolean playerWinning(int n, boolean playerToMove) {
 		int possibleMoves = possibleMovesFor(n);
 		return ((possibleMoves & 1) == 1) ? playerToMove : !playerToMove;
@@ -73,7 +56,6 @@ public class Solution {
 		}
 		return possibleMoves;
 	}
-
 	
 	private boolean[] bitsFromNumber(int n) {
 		boolean[] bits = new boolean[31];
@@ -93,27 +75,6 @@ public class Solution {
 		return count;
 	}
 
-
-	private int highestKFor(int n) {
-		int k=0;
-		while (n > 1) {
-			k++;
-			n >>= 1;
-		}
-		return k;
-	}
-
-	private int beautyOf(int n) {
-		int beauty = 0;
-		while (n != 0) {
-			if ((n & 1) == 1) {
-				beauty++;
-			}
-			n >>= 1;
-		}
-		return beauty;
-	}
-	
 	private String displayNameOfPlayer(boolean player) {
 		return (player == FIRST_PLAYER) ? "First Player" : "Second Player";
 	}
