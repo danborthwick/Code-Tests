@@ -3,7 +3,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 
 
 
@@ -68,24 +67,20 @@ public class Solution {
 	private boolean hasViableKey(int maximumDigit, int numberOfDigits,
 			ArrayList<Guess> guesses) {
 		
-		for (KeyIterator iterator = new KeyIterator(numberOfDigits, maximumDigit);
-				iterator.hasNext();
-				) 
-		{
-			IntArray key = iterator.next();
-			
-			boolean keyIsValid = true;
-			for (Guess guess : guesses) {
-				if (!keyMatchesGuess(key, guess)) {
-					keyIsValid = false;
-					break;
+		for (Guess firstGuess : guesses) {
+			for (Guess secondGuess : guesses) {
+				if (firstGuess == secondGuess)
+					continue;
+				
+				int sharedElements = matchCount(firstGuess.digits, secondGuess.digits);
+				int totalMatches = firstGuess.score + secondGuess.score;
+				if ((totalMatches - sharedElements) > numberOfDigits) {
+					return false;
 				}
 			}
-			
-			if (keyIsValid)
-				return true;
 		}
-		return false;
+		
+		return true;
 	}
 
 	private boolean keyMatchesGuess(IntArray key, Guess guess) {
@@ -128,58 +123,9 @@ public class Solution {
 		for (int guessId=0; guessId<numberOfGuesses; guessId++) {
 			Guess guess = new Guess();
 			guess.digits = readIntArray();
-			guess.score = guess.digits.remove(numberOfDigits-1).value;
+			guess.score = guess.digits.remove(numberOfDigits).value;
 			guesses.add(guess);
 		}
 		return guesses;
-	}
-	
-	class KeyIterator implements Iterator<IntArray>
-	{
-		int numberOfDigits;
-		int maximumDigit;
-		IntArray currentGuess;
-		
-		public KeyIterator(int numberOfDigits, int maximumDigit) {
-			this.numberOfDigits = numberOfDigits;
-			this.maximumDigit = maximumDigit;
-			this.currentGuess = new IntArray(numberOfDigits);
-			
-			for (int digit=0; digit<numberOfDigits; digit++) {
-				MyInt myInt = new MyInt();
-				myInt.value = 1;
-				currentGuess.add(myInt);
-			}
-		}
-		
-		@Override
-		public boolean hasNext() {
-			for (MyInt digit : currentGuess) {
-				if (digit.value != maximumDigit) {
-					return true;
-				}
-			}
-			return false;
-		}
-
-		@Override
-		public IntArray next() {
-			for (MyInt digit : currentGuess) {
-				if (digit.value < maximumDigit) {
-					digit.value++;
-					break;
-				}
-				else {
-					digit.value = 1;
-				}
-			}
-			return currentGuess;
-		}
-
-		@Override
-		public void remove() {
-			// TODO Auto-generated method stub
-		}
-		
 	}
 }

@@ -34,7 +34,7 @@ public class TestProvidedInputs {
 		
 		String actualOutput = new String(outputBytes.toByteArray());
 
-		assertEquals(readExpectedOutput(caseSuffix), actualOutput);
+		assertEquals(readExpectedOutput(caseSuffix).trim(), actualOutput.trim());
 	}
 
 	private BufferedReader inputStreamForCase(String caseSuffix)
