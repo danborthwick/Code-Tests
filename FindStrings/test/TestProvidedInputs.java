@@ -18,13 +18,18 @@ public class TestProvidedInputs {
 		testProvidedInputs("00");
 	}
 
+	@Test
+	public void testClashes() throws Exception {
+		testProvidedInputs("Clashes");
+	}
+
 	//@Test
-	public void testProvidedInputsLong() throws Exception {
+	public void testLongDuplicates() throws Exception {
 		testProvidedInputs("Long");
 	}
 
 	@Test
-	public void testProvidedInputsRandomLong() throws Exception {
+	public void testRandomLong() throws Exception {
 		testProvidedInputs("RandomLong");
 	}
 
