@@ -15,7 +15,7 @@ public class SuffixTreeTest {
 	@Test
 	public void testWhenASingleLetterIsAdded_thenTreeContainsLetter() {
 		SuffixTree tree = new SuffixTree();
-		tree.add('a');
+		tree.add("a");
 		
 		assertTrue(tree.contains("a"));
 	}
@@ -23,7 +23,7 @@ public class SuffixTreeTest {
 	@Test
 	public void testWhenASingleLetterIsAdded_thenTreeHasRootNodeWithLeafChild() {
 		SuffixTree tree = new SuffixTree();
-		tree.add('a');
+		tree.add("a");
 		
 		assertThat(tree.root, instanceOf(SuffixTree.ExplicitNode.class));
 		assertThat(tree.root.child('a'), instanceOf(SuffixTree.LeafNode.class));
@@ -38,24 +38,49 @@ public class SuffixTreeTest {
 	}
 	
 	@Test
-	public void testWhenTwoLettersAreAdded_thenTreeContainsPartialSuffices() {
+	public void testWhenStringWithNoRepetitionsIsAdded_thenTreeContainsPartialSuffices() {
 		SuffixTree tree = new SuffixTree();
-		tree.add("ab");
+		tree.add("abc");
 		
 		assertTrue(tree.contains("a"));
 		assertTrue(tree.contains("b"));
+		assertTrue(tree.contains("c"));
+		assertTrue(tree.contains("ab"));
+		assertTrue(tree.contains("bc"));
 	}
 
 	@Test
-	public void testWhenABIsAdded_thenTreeHasExpectedForm() {
+	public void testWhenStringWithNoRepetitionsIsAdded_thenTreeHasExpectedForm() {
 		SuffixTree actual = new SuffixTree();
-		actual.add("ab");
+		actual.add("abc");
 
 		SuffixTree expected = B.tree(
-				B.leaf("ab"),
-				B.leaf("b")
+				B.leaf("abc"),
+				B.leaf("bc"),
+				B.leaf("c")
 				);
 
+		assertThat(actual, isEqualToTree(expected));
+	}
+
+	@Test
+	// Case matches example in 
+	// http://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english
+	public void testWhenABCABXABCDIsAdded_thenTreeHasExpectedForm() {
+		SuffixTree actual = new SuffixTree();
+		actual.add("abcabx");
+
+		SuffixTree expected = B.tree(
+				B.explicit("ab",
+						B.leaf("x"),
+						B.leaf("cabx")),
+				B.explicit("b",
+						B.leaf("cabx"),
+						B.leaf("x")),
+				B.leaf("cabx"),
+				B.leaf("x")
+				);
+		
 		assertThat(actual, isEqualToTree(expected));
 	}
 

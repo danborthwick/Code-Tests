@@ -11,7 +11,7 @@ public class SuffixTree
 		
 		this.activePoint = new ActivePoint();
 		this.activePoint.node = root;
-		this.activePoint.edge = "";
+		this.activePoint.edge = new StringBuilder();
 		this.activePoint.length = 0;
 	}
 	
@@ -48,11 +48,54 @@ public class SuffixTree
 
 	 * @param suffix
 	 */
-	public void add(char suffixChar) {
+	private void add(char suffixChar) {
+		
 		appendCharacterToAllChildren(suffixChar);
 		
-		//TODO: Handle repetitions
-		root.addNode(new LeafNode(suffixChar));
+		activePoint.edge.append(suffixChar);
+		if (contains(activePoint.edge.toString())) {
+		}
+		else {
+			while (activePoint.edge.length() > 0) {
+				
+				ExplicitNode nodeToAddTo = root;	// TODO: Active point?
+				
+				Node nodeToSplit = root.child(activePoint.edge.charAt(0));
+				if (nodeToSplit != null) {
+					ExplicitNode splitParent = splitNode(nodeToSplit, activePoint.edge.length()-1);
+					nodeToAddTo.addNode(splitParent);
+					nodeToAddTo = splitParent;
+				}
+				
+				nodeToAddTo.addNode(new LeafNode(suffixChar));
+				deleteFirstCharacters(activePoint.edge, 1);
+			}
+		}
+	}
+	
+	private ExplicitNode splitNode(Node nodeToSplit, int splitPoint) {
+		ExplicitNode newParent = new ExplicitNode(nodeToSplit.suffix.substring(0, splitPoint));
+		deleteFirstCharacters(nodeToSplit.suffix, splitPoint);
+		newParent.addNode(nodeToSplit);
+		return newParent;
+	}
+	
+	
+	public static void deleteLastCharOf(StringBuilder stringBuilder) {
+		stringBuilder.deleteCharAt(stringBuilder.length()-1);
+	}
+	
+	public static void deleteFirstCharacters(StringBuilder stringBuilder, int numberOfCharacters) {
+		stringBuilder.delete(0, numberOfCharacters);
+	}
+	
+	private char characterAfterActivePoint() {
+		if (activePoint.node.suffix.length() > activePoint.edge.length()) {
+			return activePoint.node.suffix.charAt(activePoint.edge.length());			
+		}
+		else {
+			return 0;
+		}
 	}
 
 	private void appendCharacterToAllChildren(char suffixChar) {
@@ -64,21 +107,22 @@ public class SuffixTree
 	}
 
 	public void add(String suffix) {
+		remainder = 1;
 		for (char nextCharacter : suffix.toCharArray()) {
 			add(nextCharacter);
 		}
 	}
 
 	public boolean contains(String string) {
-		return root.child(string.charAt(0)).suffix.indexOf(string) == 0;
+		Node child = root.child(string.charAt(0));
+		return (child != null) && (child.suffix.indexOf(string) == 0);
 	}
-
 	
 	
 	
 	public class ActivePoint {
-		private Node node;
-		private String edge;
+		private ExplicitNode node;
+		private StringBuilder edge;
 		private int length;
 	}
 	
@@ -97,8 +141,14 @@ public class SuffixTree
 
 		public abstract Node child(char index);
 		
-		protected void appendDescriptionTo(StringBuffer buffer)
-		{
+		@Override
+		public String toString() {
+			StringBuffer buffer = new StringBuffer();
+			appendDescriptionTo(buffer);
+			return buffer.toString();
+		}
+		
+		protected void appendDescriptionTo(StringBuffer buffer) {
 			buffer.append(suffix);
 		}
 	}
