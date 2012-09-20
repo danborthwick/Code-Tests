@@ -50,36 +50,30 @@ public class SuffixTree
 	 */
 	private void add(char suffixChar) {
 		
-		appendCharacterToAllChildren(suffixChar);
+		root.append(suffixChar);
 		
 		activePoint.edge.append(suffixChar);
-		if (contains(activePoint.edge.toString())) {
-		}
-		else {
-			while (activePoint.edge.length() > 0) {
-				
-				ExplicitNode nodeToAddTo = root;	// TODO: Active point?
-				
-				Node nodeToSplit = root.child(activePoint.edge.charAt(0));
-				if (nodeToSplit != null) {
-					ExplicitNode splitParent = splitNode(nodeToSplit, activePoint.edge.length()-1);
-					nodeToAddTo.addNode(splitParent);
-					nodeToAddTo = splitParent;
-				}
-				
-				nodeToAddTo.addNode(new LeafNode(suffixChar));
-				deleteFirstCharacters(activePoint.edge, 1);
+		while ((activePoint.edge.length() > 0)
+				&& !contains(activePoint.edge.toString())) {
+			
+			ExplicitNode nodeToAddTo = root;	// TODO: Active point?
+			
+			Node nodeToSplit = root.child(activePoint.edge.charAt(0));
+			if (nodeToSplit != null) {
+				StringBuilder splitPoint = stringExcludingLastCharacter(activePoint.edge);
+				ExplicitNode splitParent = nodeToSplit.split(splitPoint);
+				nodeToAddTo.addNode(splitParent);
+				nodeToAddTo = splitParent;
 			}
+			
+			nodeToAddTo.addNode(new LeafNode(suffixChar));
+			deleteFirstCharacters(activePoint.edge, 1);
 		}
 	}
-	
-	private ExplicitNode splitNode(Node nodeToSplit, int splitPoint) {
-		ExplicitNode newParent = new ExplicitNode(nodeToSplit.suffix.substring(0, splitPoint));
-		deleteFirstCharacters(nodeToSplit.suffix, splitPoint);
-		newParent.addNode(nodeToSplit);
-		return newParent;
+
+	private StringBuilder stringExcludingLastCharacter(StringBuilder source) {
+		return new StringBuilder(source.substring(0, source.length()-1));
 	}
-	
 	
 	public static void deleteLastCharOf(StringBuilder stringBuilder) {
 		stringBuilder.deleteCharAt(stringBuilder.length()-1);
@@ -88,6 +82,10 @@ public class SuffixTree
 	public static void deleteFirstCharacters(StringBuilder stringBuilder, int numberOfCharacters) {
 		stringBuilder.delete(0, numberOfCharacters);
 	}
+
+	private static boolean startsWith(StringBuilder superString, StringBuilder subString) {
+		return superString.indexOf(subString.toString()) == 0;
+	}
 	
 	private char characterAfterActivePoint() {
 		if (activePoint.node.suffix.length() > activePoint.edge.length()) {
@@ -95,14 +93,6 @@ public class SuffixTree
 		}
 		else {
 			return 0;
-		}
-	}
-
-	private void appendCharacterToAllChildren(char suffixChar) {
-		for (Node child : root.children) {
-			if (child != null) {
-				child.suffix.append(suffixChar);
-			}
 		}
 	}
 
@@ -140,8 +130,11 @@ public class SuffixTree
 
 		public abstract Node child(char index);
 		
+		public abstract void append(char character);
+		
 		public boolean contains(StringBuilder searchString) {
 			
+			// TODO: Avoid recursion
 			boolean found = false;
 			Node child = child(searchString.charAt(0));
 			
@@ -159,18 +152,21 @@ public class SuffixTree
 			return found;
 		}
 		
-		private boolean startsWith(StringBuilder superString, StringBuilder subString) {
-			return superString.indexOf(subString.toString()) == 0;
+		public ExplicitNode split(StringBuilder splitPoint) {
+			ExplicitNode newParent = new ExplicitNode(splitPoint.toString());
+			deleteFirstCharacters(suffix, splitPoint.length());
+			newParent.addNode(this);
+			return newParent;				
 		}
-		
+			
 		@Override
 		public String toString() {
 			StringBuffer buffer = new StringBuffer();
-			appendDescriptionTo(buffer);
+			describeTo(buffer);
 			return buffer.toString();
 		}
 		
-		protected void appendDescriptionTo(StringBuffer buffer) {
+		protected void describeTo(StringBuffer buffer) {
 			buffer.append(suffix);
 		}
 	}
@@ -203,10 +199,34 @@ public class SuffixTree
 		public void addNode(Node childNode) {
 			children[childNode.suffix.charAt(0) - 'a'] = childNode;
 		}
+		
+		@Override
+		public void append(char character) {
+			for (Node child : children) {
+				if (child != null) {
+					child.append(character);
+				}
+			}
+		}
 
 		@Override
-		protected void appendDescriptionTo(StringBuffer buffer) {
-			super.appendDescriptionTo(buffer);
+		public ExplicitNode split(StringBuilder splitPoint) {
+			
+			if (splitPoint.length() < suffix.length()) {
+				return super.split(splitPoint);
+			}
+			else {
+				StringBuilder childSplitPoint = new StringBuilder(splitPoint.substring(suffix.length()));
+				Node childToSplit = child(childSplitPoint.charAt(0));
+				ExplicitNode newChild = childToSplit.split(childSplitPoint);
+				addNode(newChild);
+				return newChild;
+			}
+		}
+
+		@Override
+		protected void describeTo(StringBuffer buffer) {
+			super.describeTo(buffer);
 			
 			buffer.append(" [");
 			boolean isFirstChild = true;
@@ -215,7 +235,7 @@ public class SuffixTree
 					if (!isFirstChild) {
 						buffer.append(", ");
 					}
-					child.appendDescriptionTo(buffer);
+					child.describeTo(buffer);
 					isFirstChild = false;
 				}
 			}
@@ -237,6 +257,11 @@ public class SuffixTree
 		public Node child(char index) {
 			return null;
 		}
+
+		@Override
+		public void append(char character) {
+			suffix.append(character);
+		}
 	}
 
 	//-------------------------------------------------------------------------
@@ -257,7 +282,7 @@ public class SuffixTree
 	@Override
 	public String toString() {
 		StringBuffer buffer = new StringBuffer("SuffixTree: ");
-		root.appendDescriptionTo(buffer);
+		root.describeTo(buffer);
 		return buffer.toString();
 	}
 }

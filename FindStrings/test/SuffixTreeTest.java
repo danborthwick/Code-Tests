@@ -12,6 +12,10 @@ public class SuffixTreeTest {
 		return IsEqualToSuffixTree.equalToTree(expected);
 	}
 	
+	private static TypeSafeMatcher<SuffixTree.Node> isEqualToNode(SuffixTree.Node expected) {
+		return IsEqualToNode.equalToNode(expected);
+	}
+	
 	@Test
 	public void testWhenASingleLetterIsAdded_thenTreeContainsLetter() {
 		SuffixTree tree = new SuffixTree();
@@ -63,6 +67,27 @@ public class SuffixTreeTest {
 		assertThat(actual, isEqualToTree(expected));
 	}
 
+	/**
+	 * 
+	 */
+	@Test
+	public void testWhenNodeWithChildrenIsSplitAgain_thenNodeHasExpectedForm() {
+		SuffixTree.Node actual = B.explicit(
+				"ab", 
+				B.leaf("cabx"), 
+				B.leaf("x"));
+		
+		SuffixTree.Node expected = B.explicit(
+				"ab", 
+				B.explicit("c",
+						B.leaf("abx")), 
+				B.leaf("x"));
+		
+		SuffixTree.Node returned = actual.split(new StringBuilder("abc"));
+		
+		assertThat(actual, isEqualToNode(expected));
+		assertEquals("c", returned.suffix.toString());
+	}
 	@Test
 	// Case matches example in 
 	// http://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english
@@ -91,6 +116,35 @@ public class SuffixTreeTest {
 		
 		assertTrue(actual.contains("abcabx"));
 	}
+
+	@Test
+	// Case matches example in 
+	// http://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english
+	public void testWhenTreeWithDepthThreeIsCreated_thenHasExpectedForm() {
+		SuffixTree actual = new SuffixTree();
+		actual.add("abcabxabcd");
+
+		SuffixTree expected = B.tree(
+				B.leaf("xabcd"),
+				B.leaf("d"),
+				B.explicit("b",
+						B.leaf("xabcd"),
+						B.explicit("c", 
+								B.leaf("d"),
+								B.leaf("abxabcd"))),
+				B.explicit("ab",
+						B.leaf("xabcd"),
+						B.explicit("c",
+								B.leaf("d"),
+								B.leaf("abxabcd")),
+				B.explicit("c",
+						B.leaf("abxabcd"),
+						B.leaf("d")))
+				);
+		
+		assertThat(actual, isEqualToTree(expected));
+	}
+	
 
 	@Test
 	public void testWhenBookIsAdded_thenTreeHasExpectedForm() {

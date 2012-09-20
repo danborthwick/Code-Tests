@@ -4,11 +4,11 @@ import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.junit.internal.matchers.TypeSafeMatcher;
 
-public class IsEqualToSuffixTree extends TypeSafeMatcher<SuffixTree> {
+public class IsEqualToNode extends TypeSafeMatcher<SuffixTree.Node> {
 	
 	private Matcher<String> stringMatcher;
 	
-	private IsEqualToSuffixTree(SuffixTree expected) {
+	private IsEqualToNode(SuffixTree.Node expected) {
 		this.stringMatcher = CoreMatchers.is(expected.toString());
 	}
 
@@ -18,12 +18,12 @@ public class IsEqualToSuffixTree extends TypeSafeMatcher<SuffixTree> {
 	}
 
 	@Override
-	public boolean matchesSafely(SuffixTree actual) {
+	public boolean matchesSafely(SuffixTree.Node actual) {
 		return stringMatcher.matches(actual.toString());
 	}
 	
 	@Factory
-	public static <T> TypeSafeMatcher<SuffixTree> equalToTree(SuffixTree expected) {
-		return new IsEqualToSuffixTree(expected);
+	public static <T> TypeSafeMatcher<SuffixTree.Node> equalToNode(SuffixTree.Node expected) {
+		return new IsEqualToNode(expected);
 	}
 }
