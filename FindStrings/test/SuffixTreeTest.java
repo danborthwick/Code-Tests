@@ -66,7 +66,7 @@ public class SuffixTreeTest {
 	@Test
 	// Case matches example in 
 	// http://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english
-	public void testWhenABCABXABCDIsAdded_thenTreeHasExpectedForm() {
+	public void testWhenTreeWithDepthTwoIsCreated_thenHasExpectedForm() {
 		SuffixTree actual = new SuffixTree();
 		actual.add("abcabx");
 
@@ -82,6 +82,14 @@ public class SuffixTreeTest {
 				);
 		
 		assertThat(actual, isEqualToTree(expected));
+	}
+	
+	@Test
+	public void testWhenTreeWithDepthTwoIsCreated_thenContainsSplitSuffix() {
+		SuffixTree actual = new SuffixTree();
+		actual.add("abcabx");
+		
+		assertTrue(actual.contains("abcabx"));
 	}
 
 	@Test

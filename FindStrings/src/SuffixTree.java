@@ -114,8 +114,7 @@ public class SuffixTree
 	}
 
 	public boolean contains(String string) {
-		Node child = root.child(string.charAt(0));
-		return (child != null) && (child.suffix.indexOf(string) == 0);
+		return root.contains(new StringBuilder(string));
 	}
 	
 	
@@ -140,6 +139,29 @@ public class SuffixTree
 		}
 
 		public abstract Node child(char index);
+		
+		public boolean contains(StringBuilder searchString) {
+			
+			boolean found = false;
+			Node child = child(searchString.charAt(0));
+			
+			if (child != null) {
+				if (searchString.length() <= child.suffix.length()) {
+					found = startsWith(child.suffix, searchString);
+				}
+				else {
+					if (startsWith(searchString, child.suffix)) {
+						found = child.contains(new StringBuilder(searchString.substring(child.suffix.length())));
+					}
+				}
+			}
+
+			return found;
+		}
+		
+		private boolean startsWith(StringBuilder superString, StringBuilder subString) {
+			return superString.indexOf(subString.toString()) == 0;
+		}
 		
 		@Override
 		public String toString() {
