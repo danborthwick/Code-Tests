@@ -15,6 +15,11 @@ public class SuffixTree
 		this.activePoint.length = 0;
 	}
 	
+	public SuffixTree(String string) {
+		this();
+		add(string);
+	}
+	
 	SuffixTree(Node... children) {
 		root = new ExplicitNode("", children);
 	}
@@ -53,6 +58,8 @@ public class SuffixTree
 		root.append(suffixChar);
 		
 		activePoint.edge.append(suffixChar);
+		remainder++;
+		
 		while ((activePoint.edge.length() > 0)
 				&& !contains(activePoint.edge.toString())) {
 			
@@ -68,6 +75,11 @@ public class SuffixTree
 			
 			nodeToAddTo.addNode(new LeafNode(suffixChar));
 			deleteFirstCharacters(activePoint.edge, 1);
+			remainder--;
+		}
+		
+		if ((remainder == 1) && (activePoint.node == root)) {
+			root.addNode(new LeafNode(suffixChar));
 		}
 	}
 
@@ -87,15 +99,6 @@ public class SuffixTree
 		return superString.indexOf(subString.toString()) == 0;
 	}
 	
-	private char characterAfterActivePoint() {
-		if (activePoint.node.suffix.length() > activePoint.edge.length()) {
-			return activePoint.node.suffix.charAt(activePoint.edge.length());			
-		}
-		else {
-			return 0;
-		}
-	}
-
 	public void add(String suffix) {
 		remainder = 1;
 		for (char nextCharacter : suffix.toCharArray()) {
