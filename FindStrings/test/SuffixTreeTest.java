@@ -1,6 +1,8 @@
 import static org.junit.Assert.*;
 
+import static org.hamcrest.core.IsEqual.*;
 import static org.hamcrest.core.IsInstanceOf.*;
+
 import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
 
@@ -17,14 +19,14 @@ public class SuffixTreeTest {
 	}
 	
 	@Test
-	public void testWhenASingleLetterIsAdded_thenTreeContainsLetter() {
+	public void whenASingleLetterIsAdded_thenTreeContainsLetter() {
 		SuffixTree tree = new SuffixTree("a");
 		
 		assertTrue(tree.contains("a"));
 	}
 	
 	@Test
-	public void testWhenASingleLetterIsAdded_thenTreeHasRootNodeWithLeafChild() {
+	public void whenASingleLetterIsAdded_thenTreeHasRootNodeWithLeafChild() {
 		SuffixTree tree = new SuffixTree("a");
 		
 		assertThat(tree.root, instanceOf(SuffixTree.ExplicitNode.class));
@@ -32,14 +34,32 @@ public class SuffixTreeTest {
 	}
 
 	@Test
-	public void testWhenTwoLettersAreAdded_thenTreeContainsFullSuffix() {
+	public void whenTwoLettersAreAdded_thenTreeContainsFullSuffix() {
 		SuffixTree tree = new SuffixTree("ab");
 		
 		assertTrue(tree.contains("ab"));
 	}
 	
 	@Test
-	public void testWhenStringWithNoRepetitionsIsAdded_thenTreeContainsPartialSuffices() {
+	public void whenSingleLetterIsAdded_thenSuffixLinkPointsToRoot() {
+		SuffixTree tree = new SuffixTree("a");
+		
+		assertEquals(tree.root, tree.root.child('a').suffixLink);
+	}
+	
+	@Test
+	public void whenTwoLettersAreAdded_thenSuffixLinksForLastLetterAreCorrect() {
+		SuffixTree tree = new SuffixTree("ab");
+		
+		SuffixTree.Node fullStringExplicitNode = tree.root.child('a');
+		SuffixTree.Node newCharacterNode = tree.root.child('b');
+		
+		assertThat(fullStringExplicitNode.suffixLink, equalTo(newCharacterNode));
+		assertThat(newCharacterNode.suffixLink, equalTo((SuffixTree.Node)tree.root));
+	}
+	
+	@Test
+	public void whenStringWithNoRepetitionsIsAdded_thenTreeContainsPartialSuffices() {
 		SuffixTree tree = new SuffixTree("abc");
 		
 		assertTrue(tree.contains("a"));
@@ -50,7 +70,7 @@ public class SuffixTreeTest {
 	}
 
 	@Test
-	public void testWhenStringWithNoRepetitionsIsAdded_thenTreeHasExpectedForm() {
+	public void whenStringWithNoRepetitionsIsAdded_thenTreeHasExpectedForm() {
 		SuffixTree actual = new SuffixTree("abc");
 
 		SuffixTree expected = B.tree(
@@ -66,7 +86,7 @@ public class SuffixTreeTest {
 	 * 
 	 */
 	@Test
-	public void testWhenNodeWithChildrenIsSplitAgain_thenNodeHasExpectedForm() {
+	public void whenNodeWithChildrenIsSplitAgain_thenNodeHasExpectedForm() {
 		SuffixTree.Node actual = B.explicit(
 				"ab", 
 				B.leaf("cabx"), 
@@ -78,7 +98,7 @@ public class SuffixTreeTest {
 						B.leaf("abx")), 
 				B.leaf("x"));
 		
-		SuffixTree.Node returned = actual.split(new StringBuilder("abc"));
+		SuffixTree.Node returned = actual.split(new SuffixTree.SubString("abc"));
 		
 		assertThat(actual, isEqualToNode(expected));
 		assertEquals("c", returned.suffix.toString());
@@ -86,7 +106,7 @@ public class SuffixTreeTest {
 	@Test
 	// Case matches example in 
 	// http://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english
-	public void testWhenTreeWithDepthTwoIsCreated_thenHasExpectedForm() {
+	public void whenTreeWithDepthTwoIsCreated_thenHasExpectedForm() {
 		SuffixTree actual = new SuffixTree("abcabx");
 		
 		SuffixTree expected = B.tree(
@@ -104,7 +124,7 @@ public class SuffixTreeTest {
 	}
 	
 	@Test
-	public void testWhenTreeWithDepthTwoIsCreated_thenContainsSplitSuffix() {
+	public void whenTreeWithDepthTwoIsCreated_thenContainsSplitSuffix() {
 		SuffixTree actual = new SuffixTree("abcabx");
 		
 		assertTrue(actual.contains("abcabx"));
@@ -113,7 +133,7 @@ public class SuffixTreeTest {
 	@Test
 	// Case matches example in 
 	// http://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english
-	public void testWhenTreeWithDepthThreeIsCreated_thenHasExpectedForm() {
+	public void whenTreeWithDepthThreeIsCreated_thenHasExpectedForm() {
 		SuffixTree actual = new SuffixTree("abcabxabcd");
 
 		SuffixTree expected = B.tree(
@@ -141,7 +161,7 @@ public class SuffixTreeTest {
 	
 
 	@Test
-	public void testWhenBookIsAdded_thenTreeHasExpectedForm() {
+	public void whenBookIsAdded_thenTreeHasExpectedForm() {
 		SuffixTree actual = new SuffixTree("book");
 
 		SuffixTree expected = B.tree(
@@ -154,5 +174,30 @@ public class SuffixTreeTest {
 		
 		assertThat(actual, isEqualToTree(expected));
 	}
-
+	
+	@Test
+	public void whenTwoWordsAreAdded_thenTreeContainsSubStringsFromBothWords() {
+		SuffixTree tree = new SuffixTree();
+		tree.add("one");
+		tree.add("two");
+		
+		assertTrue(tree.contains("one"));	
+		assertTrue(tree.contains("two"));
+		assertTrue(tree.contains("ne"));
+		assertTrue(tree.contains("tw"));
+	}
+	
+	@Test
+	public void whenTwoWordsWithCommonPrefixAreAdded_thenNoErrorOccurs() {
+		SuffixTree tree = new SuffixTree();
+		tree.add("aab");
+		tree.add("ar");
+	}
+	
+	@Test
+	public void givenASubString_thenToStringReturnsExpectedValue() {
+		SuffixTree.SubString subString = new SuffixTree.SubString("abcdefghijkl", 3, 5);
+		
+		assertThat(subString.toString(), equalTo("de"));
+	}
 }

@@ -19,11 +19,6 @@ public class TestProvidedInputs {
 	}
 
 	@Test
-	public void testClashes() throws Exception {
-		testProvidedInputs("Clashes");
-	}
-
-	//@Test
 	public void testLongDuplicates() throws Exception {
 		testProvidedInputs("Long");
 	}
