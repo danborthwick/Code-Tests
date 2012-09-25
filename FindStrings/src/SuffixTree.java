@@ -244,6 +244,7 @@ public class SuffixTree
 					if (activePoint.edge.startIndex == activePoint.node.suffix.startIndex) {
 						activePoint.edgeNode().suffixLink = newLeaf;						
 						ExplicitNode newParent = activePoint.node.split(activePoint.edge);
+						newParent.addNode(newLeaf);
 					}
 					else {
 						// Need to split
@@ -258,7 +259,7 @@ public class SuffixTree
 					// nextCharacter duplicates the next character anyway, set activePoint to that character
 					if (activePoint.edge.startIndex == childNodeForChar.suffix.startIndex) {
 						// Reset activePoint to start of childNodeForChar
-						activePoint.edge.startIndex = activePoint.edge.endIndex;
+						activePoint.edge.startIndex = childNodeForChar.suffix.startIndex;
 					}
 					activePoint.edge.extendByOneCharacter();
 				}
