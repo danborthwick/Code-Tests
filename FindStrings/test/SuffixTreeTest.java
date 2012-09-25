@@ -2,6 +2,7 @@ import static org.junit.Assert.*;
 
 import static org.hamcrest.core.IsEqual.*;
 import static org.hamcrest.core.IsInstanceOf.*;
+import static org.hamcrest.core.IsSame.*;
 
 import org.junit.Test;
 import org.junit.internal.matchers.TypeSafeMatcher;
@@ -44,7 +45,7 @@ public class SuffixTreeTest {
 	public void whenSingleLetterIsAdded_thenSuffixLinkPointsToRoot() {
 		SuffixTree tree = new SuffixTree("a");
 		
-		assertEquals(tree.root, tree.root.child('a').suffixLink);
+		assertThat(tree.root.child('a').suffixLink, sameInstance((SuffixTree.Node)tree.root));
 	}
 	
 	@Test
@@ -54,8 +55,8 @@ public class SuffixTreeTest {
 		SuffixTree.Node fullStringExplicitNode = tree.root.child('a');
 		SuffixTree.Node newCharacterNode = tree.root.child('b');
 		
-		assertThat(fullStringExplicitNode.suffixLink, equalTo(newCharacterNode));
-		assertThat(newCharacterNode.suffixLink, equalTo((SuffixTree.Node)tree.root));
+		assertThat(fullStringExplicitNode.suffixLink, sameInstance(newCharacterNode));
+		assertThat(newCharacterNode.suffixLink, sameInstance((SuffixTree.Node)tree.root));
 	}
 	
 	@Test

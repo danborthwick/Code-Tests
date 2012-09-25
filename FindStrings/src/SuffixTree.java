@@ -7,8 +7,9 @@ public class SuffixTree
 	public SuffixTree() {
 		this.root = new ExplicitNode("");
 		this.root.suffixLink = root;
-		this.adder = new NaiiveAdder();
+		//this.adder = new NaiiveAdder();
 		//this.adder = new UkkonenAdder();
+		this.adder = new MyAdder();
 	}
 	
 	public SuffixTree(String string) {
@@ -36,7 +37,7 @@ public class SuffixTree
 	
 	public class NaiiveAdder implements Adder {
 	
-		ActivePoint activePoint = new ActivePoint();
+		ActivePoint<Node> activePoint = new ActivePoint<Node>();
 		int remainder;
 		
 		@Override
@@ -47,7 +48,7 @@ public class SuffixTree
 			
 			for (SubString nextCharacter = new SubString(suffix, 0, 1); 
 					!nextCharacter.isEmpty(); 
-					nextCharacter.advanceOneCharacter()) {
+					nextCharacter.extendByOneCharacter()) {
 				
 				add(nextCharacter);
 			}
@@ -115,7 +116,7 @@ public class SuffixTree
 	
 	public class UkkonenAdder implements Adder {
 
-		ActivePoint activePoint = new ActivePoint();
+		ActivePoint<Node> activePoint = new ActivePoint<Node>();
 		
 		@Override
 		public void add(String stringToAdd) {
@@ -128,7 +129,7 @@ public class SuffixTree
 			
 			for (SubString nextCharacter = new SubString(stringToAdd, 0, 1); 
 					!nextCharacter.isEmpty(); 
-					nextCharacter.advanceOneCharacter()) {
+					nextCharacter.extendByOneCharacter()) {
 				
 				add(nextCharacter);
 			}
@@ -206,20 +207,83 @@ public class SuffixTree
 	
 	public class MyAdder implements Adder {
 		
-		public ActivePoint activePoint = new ActivePoint();
+		public ActivePoint<ExplicitNode> activePoint = new ActivePoint<ExplicitNode>();
 
 		@Override
 		public void add(String stringToAdd) {
 			activePoint.node = root;
-			activePoint.edge = new SubString("");
+			activePoint.edge = new SubString(stringToAdd, 0, 0);
 			
-			for (char charToAdd : stringToAdd.toCharArray()) {
-				addChar(charToAdd);
+			for (SubString nextCharacter = new SubString(stringToAdd, 0, 1); 
+					!nextCharacter.isEmpty(); 
+					nextCharacter.advanceOneCharacter()) {
+				
+				addChar(nextCharacter);
 			}
 		}
 
-		private void addChar(char charToAdd) {
-			root.append(charToAdd);
+		private void addChar(SubString charToAdd) {
+			
+			//TODO: Global end index
+			root.append(charToAdd.firstCharacter());
+			
+			Node childNodeForChar = activePoint.node.child(charToAdd.firstCharacter());
+			if (childNodeForChar == null) {
+				// New node
+				Node newLeaf = new LeafNode(charToAdd);
+				activePoint.node.addNode(newLeaf);
+				//TODO: Are leaf suffix links necessary?
+				newLeaf.suffixLink = activePoint.node;
+				//TODO: Is this right?
+				if (activePoint.edgeNode() != newLeaf) {
+					activePoint.edgeNode().suffixLink = newLeaf;
+				}
+				
+				if (activePoint.edge.length() > 1) {
+
+					if (activePoint.edge.startIndex == activePoint.node.suffix.startIndex) {
+						activePoint.edgeNode().suffixLink = newLeaf;						
+						ExplicitNode newParent = activePoint.node.split(activePoint.edge);
+					}
+					else {
+						// Need to split
+						activePoint.node.split(activePoint.edge);
+						followSuffixLinksAndSplit(activePoint.node, newLeaf);
+					}
+				}
+			}
+			else {
+				// Node exists, update activePoint to point to it
+				if (activePoint.edge.nextCharacter() == charToAdd.firstCharacter()) {
+					// nextCharacter duplicates the next character anyway, set activePoint to that character
+					if (activePoint.edge.startIndex == childNodeForChar.suffix.startIndex) {
+						// Reset activePoint to start of childNodeForChar
+						activePoint.edge.startIndex = activePoint.edge.endIndex;
+					}
+					activePoint.edge.extendByOneCharacter();
+				}
+				else {
+					// Need to split activePoint.edge
+					Node newChild = activePoint.edgeNode();
+					ExplicitNode newParent = newChild.split(activePoint.edge);
+					Node newLeaf = new LeafNode(charToAdd);
+					newParent.addNode(newLeaf);
+					
+					// Now follow the suffix link
+					followSuffixLinksAndSplit(newChild, newLeaf);
+				}
+			}
+		}
+
+		private void followSuffixLinksAndSplit(Node childToAdd, Node newLeaf) {
+			ExplicitNode newParent;
+			for (ExplicitNode nodeToSplit = (ExplicitNode) childToAdd.suffixLink;
+					nodeToSplit != root;
+					nodeToSplit = (ExplicitNode) nodeToSplit.suffixLink) {
+				newParent = nodeToSplit.split(activePoint.edge);
+				newParent.addNode(newLeaf);
+				newParent.addNode(childToAdd);
+			}
 		}
 		
 	}
@@ -244,9 +308,13 @@ public class SuffixTree
 	
 	
 	
-	public class ActivePoint {
-		private Node node;
+	public class ActivePoint<NodeType extends Node> {
+		private NodeType node;
 		private SubString edge;
+		
+		public Node edgeNode() {
+			return node.child(edge.firstCharacter());
+		}
 	}
 	
 	public char[] suffixAtPosition(int queryIndex) {
@@ -289,10 +357,19 @@ public class SuffixTree
 			return source.charAt(startIndex);
 		}
 		
+		public char nextCharacter() {
+			return source.charAt(endIndex);
+		}
+
 		public void advanceOneCharacter() {
 			startIndex++;
+			extendByOneCharacter();
+		}
+
+		private void extendByOneCharacter() {
 			endIndex = Math.min(endIndex+1, source.length());
 		}
+		
 
 		public void append(char character) {
 			if (source.charAt(endIndex) == character) {
@@ -317,6 +394,7 @@ public class SuffixTree
 	public static abstract class Node {
 
 		protected SubString suffix;
+		//TODO: ExplicitNode?
 		protected Node suffixLink;
 
 		public Node(SubString suffix) {
@@ -445,6 +523,7 @@ public class SuffixTree
 		}
 	}
 	
+	//TODO: Do leaf nodes even need a suffix or is its index in the parent enough?
 	public static class LeafNode extends Node {
 
 		public LeafNode(String suffix) {
