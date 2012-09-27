@@ -232,58 +232,57 @@ public class SuffixTree
 				// New node
 				Node newLeaf = new LeafNode(charToAdd);
 				activePoint.node.addNode(newLeaf);
-				//TODO: Are leaf suffix links necessary?
-				newLeaf.suffixLink = activePoint.node;
-				//TODO: Is this right?
-				if (activePoint.edgeNode() != newLeaf) {
-					activePoint.edgeNode().suffixLink = newLeaf;
-				}
-				
-				if (activePoint.edge.length() > 1) {
+				addToEndOfSuffixLinkChain(newLeaf);
+			}
 
-					if (activePoint.edge.startIndex == activePoint.node.suffix.startIndex) {
-						activePoint.edgeNode().suffixLink = newLeaf;						
-						ExplicitNode newParent = activePoint.node.split(activePoint.edge);
-						newParent.addNode(newLeaf);
-					}
-					else {
-						// Need to split
-						activePoint.node.split(activePoint.edge);
-						followSuffixLinksAndSplit(activePoint.node, newLeaf);
-					}
+			//TODO: Is this all reachable if childNodeForChar doesn't exist?
+			if (activePoint.edge.nextCharacter() == charToAdd.firstCharacter()) {
+				// Repetition
+				if (activePoint.edge.firstCharacter() == charToAdd.firstCharacter()) {
+					// Start of a new repetition. Reset activePoint to first character of active edge
+					activePoint.edge.startIndex = activePoint.edgeNode().suffix.startIndex;
+					activePoint.edge.endIndex = activePoint.edge.startIndex + 1;
+				}
+				else {
+					// Continue a current repetition
+					activePoint.edge.extendByOneCharacter();
 				}
 			}
 			else {
-				// Node exists, update activePoint to point to it
-				if (activePoint.edge.nextCharacter() == charToAdd.firstCharacter()) {
-					// nextCharacter duplicates the next character anyway, set activePoint to that character
-					if (activePoint.edge.startIndex == childNodeForChar.suffix.startIndex) {
-						// Reset activePoint to start of childNodeForChar
-						activePoint.edge.startIndex = childNodeForChar.suffix.startIndex;
-					}
-					activePoint.edge.extendByOneCharacter();
-				}
-				else {
-					// Need to split activePoint.edge
-					Node newChild = activePoint.edgeNode();
-					ExplicitNode newParent = newChild.split(activePoint.edge);
-					Node newLeaf = new LeafNode(charToAdd);
-					newParent.addNode(newLeaf);
-					
-					// Now follow the suffix link
-					followSuffixLinksAndSplit(newChild, newLeaf);
-				}
+				// Not repeating, need a new leaf
+				Node newLeaf = new LeafNode(charToAdd);	//TODO: Reuse leaf created above?
+				addToEndOfSuffixLinkChain(newLeaf);
+				followSuffixLinksAndSplit(activePoint.node, newLeaf);
 			}
 		}
+		
+		//TODO: Search for root or activePoint?
+		private void addToEndOfSuffixLinkChain(Node nodeToAdd) {
+			Node node = lastNonRootNodeInSuffixLinkChain();
+			if (node != null) {
+				node.suffixLink = nodeToAdd;
+			}
+			nodeToAdd.suffixLink = root;
+		}
 
-		private void followSuffixLinksAndSplit(Node childToAdd, Node newLeaf) {
-			ExplicitNode newParent;
-			for (ExplicitNode nodeToSplit = (ExplicitNode) childToAdd.suffixLink;
-					nodeToSplit != root;
-					nodeToSplit = (ExplicitNode) nodeToSplit.suffixLink) {
-				newParent = nodeToSplit.split(activePoint.edge);
+		private Node lastNonRootNodeInSuffixLinkChain() {
+			Node node = activePoint.edgeNode();
+			while ((node != null) && (node.suffixLink != root)) {
+				node = node.suffixLink;
+			}
+			return node;
+		}
+
+		private void followSuffixLinksAndSplit(ExplicitNode grandParent, Node newLeaf) {
+			Node nodeToSplit = grandParent.child(activePoint.edge.firstCharacter());
+			
+			while ((nodeToSplit != root) && !activePoint.edge.isEmpty()) {
+				ExplicitNode newParent = nodeToSplit.split(activePoint.edge);
+				grandParent.addNode(newParent);
 				newParent.addNode(newLeaf);
-				newParent.addNode(childToAdd);
+				activePoint.edge.consumeFirstCharacter();
+				nodeToSplit = nodeToSplit.suffixLink;
+				//TODO: Update grandparent?
 			}
 		}
 		
@@ -371,6 +370,9 @@ public class SuffixTree
 			endIndex = Math.min(endIndex+1, source.length());
 		}
 		
+		public void consumeFirstCharacter() {
+			startIndex++;
+		}
 
 		public void append(char character) {
 			if (source.charAt(endIndex) == character) {

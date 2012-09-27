@@ -104,6 +104,19 @@ public class SuffixTreeTest {
 		assertThat(actual, isEqualToNode(expected));
 		assertEquals("c", returned.suffix.toString());
 	}
+	
+	@Test
+	public void whenNodeIsSplit_thenSuffixLinkIsCopiedToNewChild() {
+		SuffixTree.Node child = B.leaf("ab");
+		SuffixTree.Node linkDestination = B.leaf("linkdestination");
+		child.suffixLink = linkDestination;
+		
+		SuffixTree.Node parent = child.split(new SuffixTree.SubString("a"));
+		
+		assertThat(child.suffixLink, sameInstance(linkDestination));
+		
+	}
+	
 	@Test
 	// Case matches example in 
 	// http://stackoverflow.com/questions/9452701/ukkonens-suffix-tree-algorithm-in-plain-english
