@@ -99,7 +99,7 @@ public class SuffixTreeTest {
 						B.leaf("abx")), 
 				B.leaf("x"));
 		
-		SuffixTree.Node returned = actual.split(new SuffixTree.SubString("abc"));
+		SuffixTree.Node returned = actual.split(SuffixTree.SubString.fromString("abc"));
 		
 		assertThat(actual, isEqualToNode(expected));
 		assertEquals("c", returned.suffix.toString());
@@ -111,7 +111,7 @@ public class SuffixTreeTest {
 		SuffixTree.Node linkDestination = B.leaf("linkdestination");
 		child.suffixLink = linkDestination;
 		
-		SuffixTree.Node parent = child.split(new SuffixTree.SubString("a"));
+		child.split(SuffixTree.SubString.fromString("a"));
 		
 		assertThat(child.suffixLink, sameInstance(linkDestination));
 		
@@ -210,7 +210,7 @@ public class SuffixTreeTest {
 	
 	@Test
 	public void givenASubString_thenToStringReturnsExpectedValue() {
-		SuffixTree.SubString subString = new SuffixTree.SubString("abcdefghijkl", 3, 5);
+		SuffixTree.SubString subString = SuffixTree.SubString.nonGlobal("abcdefghijkl", 3, 5);
 		
 		assertThat(subString.toString(), equalTo("de"));
 	}

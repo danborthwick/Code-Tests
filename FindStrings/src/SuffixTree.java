@@ -23,7 +23,7 @@ public class SuffixTree
 	
 	public void add(String stringToAdd) {
 
-		if (!root.suffix.isEmpty()) {
+		if (!root.toString().equals(" []")) {
 			// TODO: Multiple strings?
 			throw new RuntimeException("Multiple strings not supported");
 		}
@@ -43,10 +43,10 @@ public class SuffixTree
 		@Override
 		public void add(String suffix) {
 			activePoint.node = root;
-			activePoint.edge = new SubString(root.suffix.source, 0, 0);
+			activePoint.edge = SubString.nonGlobal(root.suffix.source, 0, 0);
 			remainder = 1;
 			
-			for (SubString nextCharacter = new SubString(suffix, 0, 1); 
+			for (SubString nextCharacter = SubString.nonGlobal(suffix, 0, 1); 
 					!nextCharacter.isEmpty(); 
 					nextCharacter.extendByOneCharacter()) {
 				
@@ -121,13 +121,13 @@ public class SuffixTree
 		@Override
 		public void add(String stringToAdd) {
 			activePoint.node = root;
-			activePoint.edge = new SubString();
+			activePoint.edge = SubString.nonGlobal(stringToAdd, 0, 0);
 
-			LeafNode newNode = new LeafNode(new SubString(stringToAdd, 0, 1)); 
+			LeafNode newNode = new LeafNode(SubString.nonGlobal(stringToAdd, 0, 1)); 
 			root.addNode(newNode);
 			newNode.suffixLink = root;
 			
-			for (SubString nextCharacter = new SubString(stringToAdd, 0, 1); 
+			for (SubString nextCharacter = SubString.nonGlobal(stringToAdd, 0, 1); 
 					!nextCharacter.isEmpty(); 
 					nextCharacter.extendByOneCharacter()) {
 				
@@ -180,7 +180,7 @@ public class SuffixTree
 		}
 
 		private SubString activePointEdgePlusNextChar(SubString charToAdd) {
-			SubString activePointEdgePlusNextChar = new SubString(activePoint.edge);
+			SubString activePointEdgePlusNextChar = SubString.copyNonGlobal(activePoint.edge);
 			activePointEdgePlusNextChar.append(charToAdd.firstCharacter());
 			return activePointEdgePlusNextChar;
 		}
@@ -208,25 +208,23 @@ public class SuffixTree
 	public class MyAdder implements Adder {
 		
 		public ActivePoint<ExplicitNode> activePoint = new ActivePoint<ExplicitNode>();
+		public SubString.MutableInteger globalEndIndex;
 
 		@Override
 		public void add(String stringToAdd) {
+			globalEndIndex = new SubString.MutableInteger(Math.min(stringToAdd.length(), 1));
 			activePoint.node = root;
-			activePoint.edge = new SubString(stringToAdd, 0, 0);
+			activePoint.edge = SubString.nonGlobal(stringToAdd, 0, 0);
 			
-			for (SubString nextCharacter = new SubString(stringToAdd, 0, 1); 
-					!nextCharacter.isEmpty(); 
-					nextCharacter.advanceOneCharacter()) {
-				
+			SubString nextCharacter = SubString.global(stringToAdd, 0, globalEndIndex);
+			while (!nextCharacter.isEmpty()) {
 				addChar(nextCharacter);
+				nextCharacter.consumeFirstCharacter();
+				globalEndIndex.value = Math.min(globalEndIndex.value+1, stringToAdd.length());
 			}
 		}
 
 		private void addChar(SubString charToAdd) {
-			
-			//TODO: Global end index
-			root.append(charToAdd.firstCharacter());
-			
 			Node childNodeForChar = activePoint.node.child(charToAdd.firstCharacter());
 			if (childNodeForChar == null) {
 				// New node
@@ -238,13 +236,13 @@ public class SuffixTree
 			//TODO: Is this all reachable if childNodeForChar doesn't exist?
 			if (activePoint.edge.nextCharacter() == charToAdd.firstCharacter()) {
 				// Repetition
-				if (activePoint.edge.firstCharacter() == charToAdd.firstCharacter()) {
+				if (charToAdd.firstCharacter() == activePoint.edge.firstCharacter()) {
 					// Start of a new repetition. Reset activePoint to first character of active edge
 					activePoint.edge.startIndex = activePoint.edgeNode().suffix.startIndex;
-					activePoint.edge.endIndex = activePoint.edge.startIndex + 1;
+					activePoint.edge.endIndex.value = activePoint.edge.startIndex + 1;
 				}
 				else {
-					// Continue a current repetition
+					// Continue existing repetition
 					activePoint.edge.extendByOneCharacter();
 				}
 			}
@@ -288,8 +286,10 @@ public class SuffixTree
 		
 	}
 	
-	private SubString stringExcludingLastCharacter(SubString edge) {
-		return new SubString(edge.source, edge.startIndex, edge.endIndex-1);
+	private SubString stringExcludingLastCharacter(SubString other) {
+		SubString result = SubString.copyNonGlobal(other);
+		result.endIndex.value--;
+		return result;
 	}
 	
 	public static void deleteFirstCharacters(SubString suffix, int numberOfCharacters) {
@@ -303,7 +303,7 @@ public class SuffixTree
 	}
 	
 	public boolean contains(String string) {
-		return root.contains(new SubString(string));
+		return root.contains(SubString.fromString(string));
 	}
 	
 	
@@ -322,43 +322,63 @@ public class SuffixTree
 	}
 
 	//-------------------------------------------------------------------------
-	public static class SubString {
+	public static class SubString extends Object {
 		public String source;
 		public int startIndex;
-		public int endIndex;
+		public MutableInteger endIndex; // Integer, so can be global
 		
-		public SubString(String source, int startIndex, int endIndex) {
+		public static final int USE_GLOBAL_END_INDEX = -1;
+		
+		public static SubString global(String source, int startIndex, MutableInteger globalEndIndex) {
+			return new SubString(source, startIndex, globalEndIndex);
+		}
+		
+		public static SubString nonGlobal(String source, int startIndex, int endIndex) {
+			return new SubString(source, startIndex, new MutableInteger(endIndex));
+		}
+		
+		public static SubString copyNonGlobal(SubString other) {
+			return nonGlobal(other.source, other.startIndex, other.endIndex.value);
+		}
+		
+		public static SubString copy(SubString other) {
+			return global(other.source, other.startIndex, other.endIndex);
+		}
+		
+		public static SubString fromString(String string) {
+			return nonGlobal(string, 0, string.length());
+		}
+
+		private SubString(String source, int startIndex, MutableInteger endIndex) {
 			this.source = source;
 			this.startIndex = startIndex;
 			this.endIndex = endIndex;
 		}
-		
-		public SubString(SubString suffix) {
-			this(suffix.source, suffix.startIndex, suffix.endIndex);
-		}
-
-		public SubString(String string) {
-			this(string, 0, string.length());
-		}
-		
-		public SubString() {
-			this("");
+				
+		public void setFrom(SubString other) {
+			this.source = other.source;
+			this.startIndex = other.startIndex;
+			this.endIndex = other.endIndex;
 		}
 		
 		public boolean isEmpty() {
-			return startIndex >= endIndex; 
+			return startIndex >= endIndex.value; 
 		}
 
 		public int length() {
-			return endIndex - startIndex;
+			return endIndex.value - startIndex;
 		}
 		
 		public char firstCharacter() {
 			return source.charAt(startIndex);
 		}
 		
+		public char lastCharacter() {
+			return source.charAt(endIndex.value-1);
+		}
+		
 		public char nextCharacter() {
-			return source.charAt(endIndex);
+			return source.charAt(endIndex.value);
 		}
 
 		public void advanceOneCharacter() {
@@ -367,7 +387,7 @@ public class SuffixTree
 		}
 
 		private void extendByOneCharacter() {
-			endIndex = Math.min(endIndex+1, source.length());
+			endIndex.value = Math.min(endIndex.value+1, source.length());
 		}
 		
 		public void consumeFirstCharacter() {
@@ -375,11 +395,11 @@ public class SuffixTree
 		}
 
 		public void append(char character) {
-			if (source.charAt(endIndex) == character) {
-				endIndex++;
+			if (nextCharacter() == character) {
+				endIndex.value++;
 			}
 			else {
-				throw new RuntimeException("Appending " + character + " but expected " + source.charAt(endIndex));
+				throw new RuntimeException("Appending " + character + " but expected " + nextCharacter());
 			}
 		}
 		
@@ -389,7 +409,20 @@ public class SuffixTree
 
 		@Override
 		public String toString() {
-			return source.substring(startIndex, endIndex);
+			return source.substring(startIndex, endIndex.value);
+		}
+		
+		protected static class MutableInteger {
+			public int value;
+			
+			public MutableInteger(int value) {
+				this.value = value;
+			}
+			
+			@Override
+			public String toString() {
+				return Integer.toString(value);
+			}
 		}
 	}
 	
@@ -401,11 +434,11 @@ public class SuffixTree
 		protected Node suffixLink;
 
 		public Node(SubString suffix) {
-			this.suffix = new SubString(suffix);
+			this.suffix = SubString.copy(suffix);
 		}
-
+		
 		public Node(String suffix) {
-			this.suffix = new SubString(suffix);
+			this.suffix = SubString.nonGlobal(suffix, 0, suffix.length());
 		}
 
 		public abstract Node child(char index);
@@ -496,9 +529,9 @@ public class SuffixTree
 			}
 			else {
 				// TODO: Avoid alloc?
-				SubString childSplitPoint = new SubString(splitPoint.source, 
+				SubString childSplitPoint = SubString.nonGlobal(splitPoint.source, 
 						splitPoint.startIndex + suffix.length(), 
-						splitPoint.endIndex);
+						splitPoint.endIndex.value);
 				
 				Node childToSplit = child(childSplitPoint.firstCharacter());
 				ExplicitNode newChild = childToSplit.split(childSplitPoint);
