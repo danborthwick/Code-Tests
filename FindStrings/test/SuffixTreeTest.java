@@ -190,6 +190,25 @@ public class SuffixTreeTest {
 	}
 	
 	@Test
+	// From Ukkononen slides
+	public void whenHattivattiIsAdded_thenTreeHasExpectedForm() {
+		SuffixTree actual = new SuffixTree("hattivatti");
+
+		SuffixTree expected = B.tree(
+				B.leaf("hattivatti"),
+				B.leaf("attivatti"),
+				B.explicit("t",
+						B.leaf("ivatti"),
+						B.leaf("tivatti") 
+						),
+				B.leaf("ivatti"),
+				B.leaf("vatti")
+				);
+		
+		assertThat(actual, isEqualToTree(expected));
+	}
+	
+	@Test
 	public void whenTwoWordsAreAdded_thenTreeContainsSubStringsFromBothWords() {
 		SuffixTree tree = new SuffixTree();
 		tree.add("one");

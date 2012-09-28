@@ -251,6 +251,9 @@ public class SuffixTree
 				Node newLeaf = new LeafNode(charToAdd);	//TODO: Reuse leaf created above?
 				addToEndOfSuffixLinkChain(newLeaf);
 				followSuffixLinksAndSplit(activePoint.node, newLeaf);
+				activePoint.node = root;
+				activePoint.edge.startIndex = charToAdd.startIndex;
+				activePoint.edge.endIndex.value = charToAdd.endIndex.value;
 			}
 		}
 		
@@ -469,7 +472,7 @@ public class SuffixTree
 		}
 		
 		public ExplicitNode split(SubString splitPoint) {
-			ExplicitNode newParent = new ExplicitNode(splitPoint);
+			ExplicitNode newParent = new ExplicitNode(SubString.copyNonGlobal(splitPoint));
 			deleteFirstCharacters(suffix, splitPoint.length());
 			newParent.addNode(this);
 			return newParent;				
