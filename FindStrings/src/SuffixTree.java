@@ -229,7 +229,7 @@ public class SuffixTree
 			if (childNodeForChar == null) {
 				// New node
 				Node newLeaf = new LeafNode(charToAdd);
-				activePoint.node.addNode(newLeaf);
+				root.addNode(newLeaf);
 				addToEndOfSuffixLinkChain(newLeaf);
 			}
 
@@ -244,6 +244,12 @@ public class SuffixTree
 				else {
 					// Continue existing repetition
 					activePoint.edge.extendByOneCharacter();
+					// Detect crossing edge
+					if (activePoint.edge.length() > activePoint.edgeNode().suffix.length()) {
+						activePoint.node = (ExplicitNode) activePoint.edgeNode();
+						activePoint.edge.startIndex = activePoint.node.child(activePoint.edge.lastCharacter()).suffix.startIndex;
+						activePoint.edge.endIndex.value = activePoint.edge.startIndex + 1;
+					}
 				}
 			}
 			else {
@@ -252,7 +258,7 @@ public class SuffixTree
 				addToEndOfSuffixLinkChain(newLeaf);
 				followSuffixLinksAndSplit(activePoint.node, newLeaf);
 				activePoint.node = root;
-				activePoint.edge.startIndex = charToAdd.startIndex;
+				activePoint.edge.startIndex = charToAdd.endIndex.value;
 				activePoint.edge.endIndex.value = charToAdd.endIndex.value;
 			}
 		}
@@ -284,6 +290,7 @@ public class SuffixTree
 				activePoint.edge.consumeFirstCharacter();
 				nodeToSplit = nodeToSplit.suffixLink;
 				//TODO: Update grandparent?
+				//TODO: Does recursion actually do anything if node instances are shared???
 			}
 		}
 		
