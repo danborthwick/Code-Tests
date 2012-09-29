@@ -254,16 +254,13 @@ public class SuffixTree
 			}
 			else {
 				// Not repeating, need a new leaf
-				Node newLeaf = new LeafNode(charToAdd);	//TODO: Reuse leaf created above?
-				addToEndOfSuffixLinkChain(newLeaf);
-				followSuffixLinksAndSplit(activePoint.node, newLeaf);
+				followSuffixLinksAndSplit(activePoint.node, charToAdd);
 				activePoint.node = root;
 				activePoint.edge.startIndex = charToAdd.endIndex.value;
 				activePoint.edge.endIndex.value = charToAdd.endIndex.value;
 			}
 		}
 		
-		//TODO: Search for root or activePoint?
 		private void addToEndOfSuffixLinkChain(Node nodeToAdd) {
 			Node node = lastNonRootNodeInSuffixLinkChain();
 			if (node != null) {
@@ -280,17 +277,17 @@ public class SuffixTree
 			return node;
 		}
 
-		private void followSuffixLinksAndSplit(ExplicitNode grandParent, Node newLeaf) {
+		private void followSuffixLinksAndSplit(ExplicitNode grandParent, SubString charToAdd) {
 			Node nodeToSplit = grandParent.child(activePoint.edge.firstCharacter());
 			
-			while ((nodeToSplit != root) && !activePoint.edge.isEmpty()) {
-				ExplicitNode newParent = nodeToSplit.split(activePoint.edge);
+			int splitIndex = activePoint.edge.length();
+			while ((nodeToSplit != root) && (splitIndex > 0)) {
+				ExplicitNode newParent = nodeToSplit.split(splitIndex);
 				grandParent.addNode(newParent);
-				newParent.addNode(newLeaf);
-				activePoint.edge.consumeFirstCharacter();
+				newParent.addNode(new LeafNode(charToAdd));
 				nodeToSplit = nodeToSplit.suffixLink;
+				splitIndex--;
 				//TODO: Update grandparent?
-				//TODO: Does recursion actually do anything if node instances are shared???
 			}
 		}
 		
@@ -390,6 +387,17 @@ public class SuffixTree
 		public char nextCharacter() {
 			return source.charAt(endIndex.value);
 		}
+		
+		public char charAt(int index) {
+			throwExceptionIfIndexInvalid(index);
+			return source.charAt(startIndex + index);
+		}
+
+		private void throwExceptionIfIndexInvalid(int index) {
+			if ((index < 0) || (index >= length())) {
+				throw new RuntimeException("Invalid index: " + index + ", length is " + length());
+			}
+		}
 
 		public void advanceOneCharacter() {
 			startIndex++;
@@ -484,6 +492,13 @@ public class SuffixTree
 			newParent.addNode(this);
 			return newParent;				
 		}
+		
+		public ExplicitNode split(int splitIndexInSuffix) {
+			ExplicitNode newParent = new ExplicitNode(SubString.nonGlobal(suffix.source, suffix.startIndex, suffix.startIndex + splitIndexInSuffix));
+			deleteFirstCharacters(suffix, splitIndexInSuffix);
+			newParent.addNode(this);
+			return newParent;
+		}
 			
 		@Override
 		public String toString() {
@@ -545,6 +560,20 @@ public class SuffixTree
 				
 				Node childToSplit = child(childSplitPoint.firstCharacter());
 				ExplicitNode newChild = childToSplit.split(childSplitPoint);
+				addNode(newChild);
+				return newChild;
+			}
+		}
+		
+		@Override
+		public ExplicitNode split(int splitIndexInSuffix) {
+			
+			if (splitIndexInSuffix < suffix.length()) {
+				return super.split(splitIndexInSuffix);
+			}
+			else {
+				Node childToSplit = child(suffix.charAt(splitIndexInSuffix));
+				ExplicitNode newChild = childToSplit.split(splitIndexInSuffix - suffix.length());
 				addNode(newChild);
 				return newChild;
 			}

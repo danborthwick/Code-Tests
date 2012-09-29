@@ -173,6 +173,29 @@ public class SuffixTreeTest {
 		assertThat(actual, isEqualToTree(expected));
 	}
 	
+	/**
+	 * Note the cbd - When adding the final d, should split after b.
+	 * This case shows why node instances can't be shared since the aba.. node should not be split. 
+	 */
+	@Test
+	public void whenStringWithRepetitionNotFromFirstCharIsAdded_thenTreeHasExpectedForm() {
+		SuffixTree actual = new SuffixTree("abacbd");
+
+		SuffixTree expected = B.tree(
+				B.explicit("a",
+						B.leaf("bacbd"),
+						B.leaf("cbd")),
+				B.explicit("b",
+						B.leaf("acbd"),
+						B.leaf("d")),
+				B.leaf("cbd"),
+				B.leaf("d")
+				);
+		
+		assertThat(actual, isEqualToTree(expected));
+	}
+	
+
 
 	@Test
 	public void whenBookIsAdded_thenTreeHasExpectedForm() {
