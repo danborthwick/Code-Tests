@@ -106,14 +106,14 @@ public class SuffixTreeTest {
 	}
 	
 	@Test
-	public void whenNodeIsSplit_thenSuffixLinkIsCopiedToNewChild() {
+	public void whenNodeIsSplit_thenSuffixLinkIsCopiedToNewParent() {
 		SuffixTree.Node child = B.leaf("ab");
 		SuffixTree.Node linkDestination = B.leaf("linkdestination");
 		child.suffixLink = linkDestination;
 		
-		child.split(SuffixTree.SubString.fromString("a"));
+		SuffixTree.Node newParent = child.split(SuffixTree.SubString.fromString("a"));
 		
-		assertThat(child.suffixLink, sameInstance(linkDestination));
+		assertThat(newParent.suffixLink, sameInstance(linkDestination));
 		
 	}
 	

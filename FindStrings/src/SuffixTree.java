@@ -6,7 +6,6 @@ public class SuffixTree
 	
 	public SuffixTree() {
 		this.root = new ExplicitNode("");
-		this.root.suffixLink = root;
 		//this.adder = new NaiiveAdder();
 		//this.adder = new UkkonenAdder();
 		this.adder = new MyAdder();
@@ -254,7 +253,7 @@ public class SuffixTree
 			}
 			else {
 				// Not repeating, need a new leaf
-				followSuffixLinksAndSplit(activePoint.node, charToAdd);
+				followSuffixLinksAndSplit(activePoint.node.child(activePoint.edge.firstCharacter()), charToAdd);	//TODO: Cast
 				activePoint.node = root;
 				activePoint.edge.startIndex = charToAdd.endIndex.value;
 				activePoint.edge.endIndex.value = charToAdd.endIndex.value;
@@ -277,17 +276,23 @@ public class SuffixTree
 			return node;
 		}
 
-		private void followSuffixLinksAndSplit(ExplicitNode grandParent, SubString charToAdd) {
-			Node nodeToSplit = grandParent.child(activePoint.edge.firstCharacter());
+		private void followSuffixLinksAndSplit(Node nodeToSplit, SubString charToAdd) {
+			Node lastSplitChild = null;
 			
-			int splitIndex = activePoint.edge.length();
-			while ((nodeToSplit != root) && (splitIndex > 0)) {
-				ExplicitNode newParent = nodeToSplit.split(splitIndex);
-				grandParent.addNode(newParent);
+			while (!activePoint.edge.isEmpty()) {
+
+				Node splitChild = nodeToSplit;
+				if (lastSplitChild != null) {
+					lastSplitChild.suffixLink = splitChild;
+				}
+
+				ExplicitNode newParent = nodeToSplit.split(activePoint.edge.length());
 				newParent.addNode(new LeafNode(charToAdd));
-				nodeToSplit = nodeToSplit.suffixLink;
-				splitIndex--;
-				//TODO: Update grandparent?
+				
+				nodeToSplit = newParent.suffixLink;
+				activePoint.edge.consumeFirstCharacter();
+				
+				lastSplitChild = splitChild;
 			}
 		}
 		
@@ -450,6 +455,8 @@ public class SuffixTree
 		protected SubString suffix;
 		//TODO: ExplicitNode?
 		protected Node suffixLink;
+		//TODO: Is this necessary?
+		protected ExplicitNode parent;
 
 		public Node(SubString suffix) {
 			this.suffix = SubString.copy(suffix);
@@ -490,13 +497,23 @@ public class SuffixTree
 			ExplicitNode newParent = new ExplicitNode(SubString.copyNonGlobal(splitPoint));
 			deleteFirstCharacters(suffix, splitPoint.length());
 			newParent.addNode(this);
+			
+			newParent.suffixLink = this.suffixLink;
+			this.suffixLink = null;
+
 			return newParent;				
 		}
 		
 		public ExplicitNode split(int splitIndexInSuffix) {
 			ExplicitNode newParent = new ExplicitNode(SubString.nonGlobal(suffix.source, suffix.startIndex, suffix.startIndex + splitIndexInSuffix));
 			deleteFirstCharacters(suffix, splitIndexInSuffix);
+			
+			this.parent.addNode(newParent);
 			newParent.addNode(this);
+			
+			newParent.suffixLink = this.suffixLink;
+			this.suffixLink = null;
+
 			return newParent;
 		}
 			
@@ -535,6 +552,7 @@ public class SuffixTree
 		
 		public void addNode(Node childNode) {
 			children[childNode.suffix.firstCharacter() - 'a'] = childNode;
+			childNode.parent = this;
 		}
 		
 		@Override
