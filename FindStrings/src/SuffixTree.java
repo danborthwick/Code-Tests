@@ -253,7 +253,12 @@ public class SuffixTree
 			}
 			else {
 				// Not repeating, need a new leaf
-				followSuffixLinksAndSplit(activePoint.node.child(activePoint.edge.firstCharacter()), charToAdd);	//TODO: Cast
+				followSuffixLinksAndSplit(activePoint.node.child(activePoint.edge.firstCharacter()), charToAdd);
+				
+				//TODO: Move into followSuffixLinks?
+				if (!activePoint.edge.isEmpty()) {
+					followSuffixLinksAndSplit(root.child(activePoint.edge.firstCharacter()), charToAdd);
+				}
 				activePoint.node = root;
 				activePoint.edge.startIndex = charToAdd.endIndex.value;
 				activePoint.edge.endIndex.value = charToAdd.endIndex.value;

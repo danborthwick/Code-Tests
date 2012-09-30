@@ -83,9 +83,6 @@ public class SuffixTreeTest {
 		assertThat(actual, isEqualToTree(expected));
 	}
 
-	/**
-	 * 
-	 */
 	@Test
 	public void whenNodeWithChildrenIsSplitAgain_thenNodeHasExpectedForm() {
 		SuffixTree.Node actual = B.explicit(
@@ -142,6 +139,13 @@ public class SuffixTreeTest {
 		SuffixTree actual = new SuffixTree("abcabx");
 		
 		assertTrue(actual.contains("abcabx"));
+	}
+
+	@Test
+	public void whenTreeWithDepthTwoIsCreated_thenSuffixLinksAreCorrect() {
+		SuffixTree tree = new SuffixTree("abcabx");
+		
+		assertThat(tree.root.child('b').suffixLink, sameInstance(tree.root.child('c')));
 	}
 
 	@Test
